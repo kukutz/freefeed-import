@@ -179,7 +179,7 @@ else if (preg_match("/instagram\.com\//", $url, $matches)) {
 			}	
 		}
 	} else {
-		my_log("NEW TYPE!!! ".$ig_array["graphql"]["shortcode_media"]["__typename"]." at url ".$url;
+		my_log("NEW TYPE!!! ".$ig_array["graphql"]["shortcode_media"]["__typename"]." at url ".$url);
 	}
 
 	if ($ig_video) $ig_text_url = $url.' (+ Video)';
