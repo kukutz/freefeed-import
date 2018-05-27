@@ -100,7 +100,7 @@ if (preg_match("/twitter\.com\/.*?\/([\d]+)/", $url, $matches)) {
 		if ($tweet_video) {
 			$text .= preg_replace("/(https?\:\/\/.*)$/","\r\n\r\n(from $0)",preg_replace("/\!(https?\:\/\/.*)$/", "$1", preg_replace("/https?\:\/\//", "!$0",trim($tweet["full_text"]))));
 		} else if (is_array($photos)) {
-			$text = preg_replace("/(https?\:\/\/.*)$/","\r\n\r\n(from $0)",trim($tweet["full_text"]));
+			$text .= preg_replace("/(https?\:\/\/.*)$/","\r\n\r\n(from $0)",trim($tweet["full_text"]));
 		} else {
 			$text .= $tweet["full_text"]."\r\n\r\n(from !https://twitter.com/".$tw_array["user"]["screen_name"]."/status/".$tw_array["id_str"].")";
 		}
