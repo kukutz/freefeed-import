@@ -98,9 +98,9 @@ if (preg_match("/twitter\.com\/.*?\/([\d]+)/", $url, $matches)) {
 			}
 		}
 		if ($tweet_video) {
-			$text .= preg_replace("/(https?\:\/\/.*)$/","\r\n\r\n(from $0)",preg_replace("/\!(https?\:\/\/.*)$/", "$1", preg_replace("/https?\:\/\//", "!$0",trim($tweet["full_text"]))));
+			$text .= preg_replace("/(https?\:\/\/\S*?)$/i","\r\n\r\n(from $0)",preg_replace("/\!(https?\:\/\/\S*?)$/i", "$1", preg_replace("/https?\:\/\//", "!$0",trim($tweet["full_text"]))));
 		} else if (is_array($photos)) {
-			$text .= preg_replace("/(https?\:\/\/.*)$/","\r\n\r\n(from $0)",trim($tweet["full_text"]));
+			$text .= preg_replace("/(https?\:\/\/\S*?)$/i","\r\n\r\n(from $0)",trim($tweet["full_text"]));
 		} else {
 			$text .= $tweet["full_text"]."\r\n\r\n(from !https://twitter.com/".$tw_array["user"]["screen_name"]."/status/".$tw_array["id_str"].")";
 		}
@@ -134,7 +134,6 @@ else if (preg_match("/instagram\.com\//", $url, $matches)) {
 
 	my_log("Instagram found");
 
-	//TODO проверить что возвращает strpos
 	if (strpos($url, "?")!=false) $ig_urlj = $url."&__a=1";
 	else $ig_urlj = $url."?__a=1";
 
