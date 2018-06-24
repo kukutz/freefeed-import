@@ -18,6 +18,7 @@ die($tw_token);
 //You MUST create your own Twitter app and generate token with code above
 $tw_token = '';
 $logfile = "/var/www/log.txt";
+$show_form = true; //switch to false if you don't need manual posting support
 
 function my_die($error) {
 	global $logfile, $reqid;
@@ -33,9 +34,56 @@ function my_log($msg) {
 
 $reqid = rand (0, 10000);
 
-my_log("URL: ".$_REQUEST["url"]);
+if (isset($_REQUEST["url"])) my_log("URL: ".$_REQUEST["url"]);
 
-if (!isset($_REQUEST['url'])) my_die('No URL at all');
+if ($show_form && isset($_POST["saveToken"]) && isset($_POST["token"]))
+	setcookie("token", $_POST["token"], time()+60*60*24*365*2, "/", "", true, true);
+
+if ($show_form && isset($_COOKIE["token"])) {
+	$_POST["token"] = $_COOKIE["token"];
+	$_REQUEST["token"] = $_COOKIE["token"];
+}
+
+if (!isset($_REQUEST['url'])) { 
+	if (!$show_form) my_die('No URL at all');
+	
+	// clears token cookie if user requested that
+	if (isset($_REQUEST['clearToken'])) {
+		setcookie('token', 'deleted', 1, "/", "", true, true);
+		header ('Location: https://'.$_SERVER[HTTP_HOST].preg_replace('#\.php/.*#', '.php', $_SERVER['PHP_SELF']));
+		die();
+	}
+	
+	// shows form
+	if ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || $_SERVER['SERVER_PORT'] == 443) {
+    echo('<style>input[type=text], input[type=password], input[type=submit] {  width: 100%; padding: 12px 20px; margin: 8px 0; box-sizing: border-box;}
+input[type=text]:focus, input[type=password]:focus { background-color: lightblue;}    
+input[type=button], input[type=submit], input[type=reset] {  background-color: #4CAF50; border: none; color: white; padding: 16px 32px; text-decoration: none; margin: 4px 2px; }
+#frm,#reserr,#result { width:50%; vertical-align:center; margin: auto; } 
+#frm { padding: 100px 0; }
+#reserr {color:red; padding: 20px 0}
+#result {color:green; padding: 20px 0}</style>');
+		if (isset($_GET['result'])) {
+			$result = preg_replace('/[^\w\-]+/','',$_GET['result']);
+			if ($result=='error') 
+				echo('<div id=reserr>There was some error while posting. Sorry.<br><br>Please try again.</div>');
+			else
+				echo('<div id=result>Success! Here\'s link to your post: <a href=https://freefeed.net/posts/'.$result.'>https://freefeed.net/posts/'.$result.'</a></div>');
+		}
+    echo('<div id=frm><form action="https://'.$_SERVER['HTTP_HOST'].preg_replace('#\.php/.*#', '.php', $_SERVER['PHP_SELF']).'" method=post>');
+    echo('URL of tweet or instagram post: <input type = "text" name = "url"><br>');
+    if (isset($_COOKIE["token"])) 
+    	echo('Your token was saved in cookie. You can <a href="?clearToken=true">clear it</a> if you want.<br><br>');
+    else
+	    echo('Your token: <input type = "password" name = "token"><br>Save token to cookie: <input type="checkbox" name="saveToken" /><br><br>');
+    echo('<input type = "submit" value = "Post"></form></div>');
+		die();
+  } else {
+		header ('Location: https://'.$_SERVER[HTTP_HOST].$_SERVER[REQUEST_URI]);
+		die();
+  }
+}
 $url = trim($_REQUEST['url']);
 
 if (!isset($_REQUEST['token'])) my_die('No token');
@@ -70,7 +118,7 @@ if (preg_match("/twitter\.com\/.*?\/([\d]+)/", $url, $matches)) {
 	+ 6. если не было шага 4, то поставить в конце два перевода строк и ! + укороченную ссылку на https://twitter.com/ user > screen_name /status/ id_str
 	*/
 
-	echo "<pre>"; print_r($tw_array); 
+	//echo "<pre>"; print_r($tw_array); 
 	//die();
 	$tweet_video = false;
 	$text = "";
@@ -125,6 +173,12 @@ if (preg_match("/twitter\.com\/.*?\/([\d]+)/", $url, $matches)) {
 	$result = file_get_contents('https://freefeed.net/v1/bookmarklet', false, $context);
 
 	my_log("Result: ".substr($result,0,10)."\n");
+
+	$res = json_decode($result, true);
+	if (!$res) $resid = 'error';
+	else $resid = $res["posts"]["id"];
+	if ($show_form) header ('Location: https://'.$_SERVER[HTTP_HOST].preg_replace('#\.php/.*#', '.php', $_SERVER['PHP_SELF']).'?result='.$resid);
+	
 	die($result);
 }
 
@@ -202,7 +256,7 @@ else if (preg_match("/instagram\.com\//", $url, $matches)) {
 	if (isset($photo)) $body ["image"] = $photo;
 	if (isset($ig_comment)) $body ["comment"] = $ig_comment;
 	
-	print_r($body);
+	//print_r($body);
 
 	$opts = array('http' =>
 		array(
@@ -218,6 +272,12 @@ else if (preg_match("/instagram\.com\//", $url, $matches)) {
 	$result = file_get_contents('https://freefeed.net/v1/bookmarklet', false, $context);
 
 	my_log("Result: ".substr($result,0,10));
+
+	$res = json_decode($result, true);
+	if (!$res) $resid = 'error';
+	else $resid = $res["posts"]["id"];
+	if ($show_form) header ('Location: https://'.$_SERVER[HTTP_HOST].preg_replace('#\.php/.*#', '.php', $_SERVER['PHP_SELF']).'?result='.$resid);
+
 	die($result);
 }
 else {
